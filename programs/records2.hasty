@@ -1,0 +1,15 @@
+// Should print:
+// 
+// 42
+// 42
+
+func cs132start() -> Void {
+    var r : [ n : Int ] = [ n = 42 ];
+    var n : Int = r.n;
+    print(n);
+
+    r.n = 0;
+    print(42 - r.n);
+
+    return;
+}

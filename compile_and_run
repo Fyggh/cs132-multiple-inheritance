@@ -1,0 +1,24 @@
+#!/usr/bin/env zsh
+
+if [[ ! -a $1 ]]; then
+   echo "No such file $1"
+   exit
+fi
+
+## find the llvm-as and llc programs
+CC=gcc
+
+## Make sure we're ready to write all the files
+mkdir -p bin
+rm -rf bin/${1:r} ${1:r}.{ll,bc,s}
+
+## Compile
+make || exit 0
+echo "Running compiler (translating $1 to ${1:r}.s)"
+./hasty $1 || exit 0
+echo "Running $CC (compiling/linking ${1:r}.s and runtime.c to create bin/${1:t:r})"
+$CC -g -no-pie -o bin/${1:t:r} ${1:r}.s src/Backend/runtime.c || exit 0
+
+## Run the compiled code!
+echo "Running bin/${1:t:r}"
+bin/${1:t:r} && echo "...successfully ran!"

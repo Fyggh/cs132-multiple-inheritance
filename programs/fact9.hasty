@@ -1,0 +1,36 @@
+// This test prints the factorials of 1 up through 9.
+//
+// Basically, it's the previous test fact9.nt but written in Tasty syntax.
+
+// Expected output: factorials 1 through 362880
+
+// In addition to the usual assignment, printing integers, and adding integers,
+//   it tests while loops and comparisons (specifically !=).
+
+func cs132start() -> Void {
+    var i : Integer = Integer(0);
+    var a : Integer = Integer(1);
+    while (i.value != 10) {
+        print(a.toString());
+        i = i.add(Integer(1));
+        a = a.mul(i);
+    }
+    return;
+}
+
+class Integer {
+    var value : Int;
+    init (n : Int) {
+        self.value = n;
+        return;
+    }
+    func add(other : Integer) -> Integer {
+        return Integer(self.value + other.value);
+    }
+    func mul(other : Integer) -> Integer {
+        return Integer(self.value * other.value);
+    }
+    func toString() -> String {
+        return cast String(self.value);
+    }
+}

@@ -1,0 +1,17 @@
+// Should output:
+//
+// 42
+
+class New2 {
+    var value : Int;
+    init (k : Int) {
+        self.value = k;
+        return;
+    }
+}
+
+func cs132start() -> Void {
+    var x : New2 = New2(42);
+    print(x.value);
+    return;
+}

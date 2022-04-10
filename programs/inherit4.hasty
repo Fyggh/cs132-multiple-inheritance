@@ -1,0 +1,25 @@
+// Should print 42
+
+class C {
+    init () {
+        return;
+    }
+    func m() -> Int {
+        return -1;
+    }
+}
+
+class D : C {
+    init () : super() {
+        return;
+    }
+    override func m() -> Int {
+        return 42;
+    }
+}
+
+func cs132start() -> Void {
+    var x : C = D();
+    print(x.m());
+    return;
+}

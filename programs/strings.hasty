@@ -1,0 +1,53 @@
+// Prints some strings, using a user-defined string class.
+
+// Expected output:
+
+// 12
+// 14
+// (!!!!)
+// 6
+// 42
+// 42
+// That is, 6 * 7 == 42
+
+class Stringy {
+    var value : String;
+
+    init ( s : String ) {
+        self.value = s;
+        return;
+    }
+
+    func length() -> Int {
+        return self.value.count;
+    }
+
+    func toString() -> String {
+        return self.value;
+    }
+
+    func append(other : Stringy) -> Stringy {
+        return Stringy(self.value + other.value);
+    }
+}
+
+func cs132start() -> Void {
+    print(Stringy("hello\nworld!").length());
+    var str : Stringy = Stringy("\"hello\tworld!\"");
+    print(str.length());
+
+    var str1 : Stringy = Stringy("!");
+    var str2 : Stringy = str1.append(str1);
+    var str4 : Stringy = str2.append(str2);
+    var str6 : Stringy = Stringy("(").append(str4).append(Stringy(")"));
+    print(str6.toString());
+    print(str6.length());
+
+    var n : Int = 6 * 7;
+    var s : Stringy = Stringy(cast String(n));
+    print(n);
+    print(s.toString());
+    print("That is, 6 * 7 == " + Stringy(cast String(6*7)).toString());
+
+    return;
+}

@@ -1,0 +1,17 @@
+// Should output:
+//
+// 42
+
+class Methods2 {
+    init () {
+        return;
+    }
+    func loop(n : Int) -> Int {
+        return self.loop(n+1);
+    }
+}
+
+func cs132start() -> Void {
+    print(42);
+    return;
+}

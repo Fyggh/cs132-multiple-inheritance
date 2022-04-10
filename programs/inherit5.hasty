@@ -1,0 +1,25 @@
+// Should print 42
+
+class C {
+    init () {
+        return;
+    }
+}
+
+class D : C {
+    init () : super() {
+        return;
+    }
+}
+
+class E : D {
+    init () : super() {
+        return;
+    }
+}
+
+func cs132start() -> Void {
+    var x : C = E();
+    print(42);
+    return;
+}

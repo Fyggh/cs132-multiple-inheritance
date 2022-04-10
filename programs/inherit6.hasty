@@ -1,0 +1,22 @@
+// Should print 42
+
+class C {
+    var c : Int;
+    init (x : Int) {
+        self.c = x;
+    }
+}
+
+class D : C {
+    var d : Int;
+    init (y : Int) : super(y / 2) {
+        self.d = y/2;
+        return;
+    }
+}
+
+func cs132start() -> Void {
+    var obj : D = D(42);
+    print(obj.c + obj.d);
+    return;
+}

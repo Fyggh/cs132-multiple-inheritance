@@ -1,0 +1,18 @@
+// Should output:
+//
+// 42
+
+class StaticMethods {
+    init () {
+        return;
+    }
+    static func inc(n : Int) -> Int {
+        return n + 1;
+    }
+}
+
+func cs132start() -> Void {
+    var n : Int = StaticMethods.inc(41);
+    print(n);
+    return;
+}

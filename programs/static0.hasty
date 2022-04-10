@@ -1,0 +1,18 @@
+// Should output:
+//
+// 42
+
+class StaticOnly {
+    init () {
+        return;
+    }
+    static func inc(n : Int) -> Int {
+        return n + 1;
+    }
+}
+
+func cs132start() -> Void {
+    var n : Int = 42;
+    print(42);
+    return;
+}

@@ -1,0 +1,15 @@
+// Should output:
+//
+// 42
+
+class New1 {
+    init () {
+        return;
+    }
+}
+
+func cs132start() -> Void {
+    var x : New1 = New1();
+    print(42);
+    return;
+}

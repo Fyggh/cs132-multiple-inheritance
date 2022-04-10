@@ -1,0 +1,16 @@
+// Should print:
+// 
+// 42
+// "42"
+
+func cs132start() -> Void {
+    var r : [ n : Int ] = [ n = 42 ];
+    var n : Int = r.n;
+    print(n);
+
+    var r2 : [ s : String ] = [ s = "42" ];
+    var s : String = r2.s;
+    print(s);
+    
+    return;
+}

@@ -1,0 +1,30 @@
+{
+  "name": "CS 132 HW 9",
+  "image": "harveymudd/cs132:4",
+
+  "settings": {
+    "haskell.releasesDownloadStoragePath": "~/.ghcup",
+    "haskell.formattingProvider": "stylish-haskell",
+    "haskell.plugin.moduleName.globalOn": false,
+    "haskell.hlintOn": true,
+    "haskell.hlint.executablePath": "/root/.cabal/bin/hlint",
+
+    "terminal.integrated.profiles.linux": {
+      "zsh": {
+        "path": "/bin/zsh"
+      }
+    },
+    "terminal.integrated.defaultProfile.linux": "zsh",
+    "haskellShell.ghci.arguments": ["-isrc"]
+  },
+
+  "extensions": [
+    "justusadam.language-haskell",
+    "eriksik2.vscode-ghci",
+    "haskell.haskell",
+    "phoityne.phoityne-vscode",
+    "hoovercj.haskell-linter",
+    "streetsidesoftware.code-spell-checker",
+    "rreverser.llvm"
+  ]
+}

@@ -1,0 +1,21 @@
+// Should output:
+//
+// 42
+
+class Counter {
+    var value : Int;
+    init (n : Int) {
+        self.value = n;
+        return;
+    }
+    func inc() -> Void {
+        self.value = self.value + 1;
+    }
+}
+
+func cs132start() -> Void {
+    var c : Counter = Counter(41);
+    c.inc();
+    print(c.value);
+    return;
+}

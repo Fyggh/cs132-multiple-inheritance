@@ -1,0 +1,10 @@
+// Come up with an "interesting" example of hasty doing some
+//   nontrivial computation or using some nontrivial data structure.
+
+// What does the program do?
+//
+//  ....
+
+func cs132start() -> Void {
+    return;
+}

@@ -1,0 +1,20 @@
+// should print 42
+
+class Inherit1A {
+    var x : Int;
+    init () {
+        return;
+    }
+}
+
+class Inherit1B : Inherit1A {
+    var y : Int;
+    init () : super() {
+        return;
+    }
+}
+
+func cs132start() -> Void {
+    print(42);
+    return;
+}

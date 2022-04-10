@@ -1,0 +1,32 @@
+// should print 42
+
+class Inherit2A {
+    var value : Int;
+    init (n : Int) {
+        self.value = n;
+        return;
+    }
+    func get() -> Int {
+        return self.value;
+    }
+    func id(m : Int) -> Int {
+        return m;
+    }
+}
+
+class Inherit2B : Inherit2A {
+    var extra : Int;
+    init (n : Int) : super(n) {
+        self.extra = 1;
+        return;
+    }
+    override func get() -> Int {
+        return self.id(self.value + self.extra);
+    }
+}
+
+func cs132start() -> Void {
+    var obj : Inherit2B = Inherit2B(41);
+    print(obj.get());
+    return;
+}

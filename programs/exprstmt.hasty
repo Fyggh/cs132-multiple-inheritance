@@ -1,0 +1,11 @@
+// Tests expressions as statements
+// prints 42.
+
+func f() -> Void {
+    print(42);
+}
+
+func cs132start() -> Void {
+    f();
+    return;
+}
