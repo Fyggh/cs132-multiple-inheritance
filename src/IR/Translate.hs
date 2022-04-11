@@ -80,7 +80,8 @@ xMethod :: Counter -> ClassName -> Method -> IO Fragment
 xMethod ct className (methodName, params, body) = do
   -- TODO: The value below is a placeholder. Implement the function to return the
   -- correct value
-  return $ FragCode (className ++ "__" ++ methodName) []
+  body' <- xBody ct params body
+  return $ FragCode (className ++ "__" ++ methodName) body'
 
 -- vtables
 xVTable :: Counter -> ClassName -> VTable -> IO Fragment

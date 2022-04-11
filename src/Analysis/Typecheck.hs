@@ -167,8 +167,8 @@ checkMethod :: Ctx -> H.ClassName -> H.Method -> IO T.Method
 checkMethod ctx className (methodKind, methodName, hParams, resultType, hBody) = do
   -- TODO: The value below is a placeholder. Implement the function to return
   -- the correct value.
-  return (methodName, [], T.SBlock [])
-
+  (tParams, tBody) <- checkBody ctx methodName hParams resultType hBody
+  return (methodName, tParams, tBody)
 
 ------------------------------
 -- Statements
@@ -446,7 +446,9 @@ synthExpr ctx (H.ERecord fields) = do
 
 {- Static calls -}
 synthExpr ctx (H.EStaticCall className methodName hArgs) = do
-  error "Typechecking for static calls is not yet implemented"  -- TODO
+  let (_, argTypes, returnType) = lookupStaticMethod ctx className methodName
+  targs <- checkExprs ctx hArgs argTypes
+  return (returnType,  T.EStaticCall className methodName targs)
 
 {- Virtual calls -}
 synthExpr ctx (H.EInvoke hReceiverExpr methodName hArgs) = do
