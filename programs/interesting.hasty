@@ -5,6 +5,77 @@
 //
 //  ....
 
+class Fraction {
+    var numerator : Int;
+    var denominator : Int;
+
+    init (n:Int, d:Int) {
+        // When creating a fraction, put it into lowest terms.
+        var commonFactor : Int = Fraction.gcd(n, d);
+        self.numerator = n ;// / commonFactor;
+        self.denominator = d ;// / commonFactor;
+        return;
+    }
+
+    func add(other : Fraction) -> Fraction {
+        var numerator : Int = self.numerator * other.denominator 
+                                + other.numerator * self.denominator;
+        var denominator : Int = self.denominator * other.denominator;
+        print(cast String(numerator));
+        print(cast String(denominator));
+        return Fraction(numerator, denominator);
+    }
+
+    func mult(other : Fraction) -> Fraction {
+        var numerator : Int = self.numerator * other.numerator;
+        var denominator : Int = self.denominator * other.denominator;
+        return Fraction(numerator, denominator);
+    }
+
+    func subtract(other : Fraction) -> Fraction {
+       return self.add(Fraction(- other.numerator, other.denominator));
+    }
+
+    func div(other : Fraction) -> Fraction {
+       return self.mult(Fraction(other.denominator, other.numerator));
+    }
+
+    func show() -> Void {
+        print("Calling show!");
+        print(self.numerator);
+        print("Tried to access numerator");
+        print((cast String(self.numerator)) + "/" + (cast String(self.denominator)));
+    }
+
+    static func gcd(a:Int, b:Int) -> Int {
+        print("GCD Called.");
+        if a == 0 {
+            return b;
+        } else if b == 0 {
+            return a;
+        } else if a < 0 {
+            return Fraction.gcd(-a, b);
+        } else if b < 0 {
+            return Fraction.gcd(a, -b);
+        } else if a < b {
+            return Fraction.gcd(b - a, a);
+        } else if a > b {
+            return Fraction.gcd(a - b, b);
+        } else {
+            return a;
+        }
+    }
+}
+
 func cs132start() -> Void {
+    var half : Fraction = Fraction(1, 2);
+    //var half2 : Fraction = Fraction(1, 2);
+    // print("Created fractions.");
+    //var whole : Fraction = half.add(half2);
+    half.show();
+
+    //whole.show();
+    print(42);
+    //var a : Fraction = Fraction(1, 2);
     return;
 }
