@@ -161,8 +161,9 @@ checkConstructor ctx className (hParams, hSuperInit, hBody) = do
   -- TODO: The value below is a placeholder. Implement the function to return the
   -- correct value
   let constructorName = className ++ "__init"
-  (tParams, tBody) <- checkBody ctx constructorName hParams VoidTy hBody
-  return (tParams, Nothing, tBody)
+  (ctx', tself) <- insertVar ctx "self" (ClassTy className)
+  (tParams, tBody) <- checkBody ctx' constructorName hParams VoidTy hBody
+  return (tself : tParams, Nothing, tBody)
 
 -- methods
 checkMethod :: Ctx -> H.ClassName -> H.Method -> IO T.Method
