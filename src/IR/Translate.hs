@@ -293,8 +293,8 @@ xExpr ct (ENew numFields className constructorArgs) = do
   t <- freshTemp ct
   let new = ASSIGN (TEMP t) (CALL (NAME "newTable") [CONST numFields])
   argExprs <- mapM (xExpr ct) constructorArgs
-  let construct = CALL (NAME (className ++ "__init")) (TEMP t : argExprs)
-  return $ ESEQ [new] construct
+  let construct = EXPR $ CALL (NAME (className ++ "__init")) (TEMP t : argExprs)
+  return $ ESEQ [new, construct] (TEMP t)
 
 -----------------------------------------------------------------------------------------
 -- Helper functions
