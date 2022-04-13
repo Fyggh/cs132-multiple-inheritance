@@ -64,9 +64,8 @@ xBody ct params body = do
 -- constructors
 xConstructor :: Counter -> ClassName -> Constructor -> IO Fragment
 xConstructor ct className (params, superInit, body) = do
-  -- TODO: The value below is a placeholder. Implement the function to return the
-  -- correct value
-  return $ FragCode (className ++ "__init") []
+  body' <- xBody ct params body
+  return $ FragCode (className ++ "__init") body'
 
 -- super initializers
 xSuperInit :: Counter -> ClassName -> SuperInit -> IO [Target.Stmt]
@@ -282,7 +281,8 @@ xExpr ct (EProj receiverExpr fieldNumber) = do
 
 {- Static calls -}
 xExpr ct (EStaticCall className methodName args) = do
-  return undefined
+  argExprs <- mapM (xExpr ct) args
+  return $ CALL (NAME (className ++ "__" ++ methodName)) argExprs
 
 {- Virtual calls -}
 xExpr ct (EInvoke receiverExpr methodNumber args) = do
@@ -290,7 +290,11 @@ xExpr ct (EInvoke receiverExpr methodNumber args) = do
 
 {- New (object instantiation) -}
 xExpr ct (ENew numFields className constructorArgs) = do
-  return undefined
+  t <- freshTemp ct
+  let new = ASSIGN (TEMP t) (CALL (NAME "newTable") [CONST numFields])
+  argExprs <- mapM (xExpr ct) constructorArgs
+  let construct = CALL (NAME (className ++ "__init")) (TEMP t : argExprs)
+  return $ ESEQ [new] construct
 
 -----------------------------------------------------------------------------------------
 -- Helper functions

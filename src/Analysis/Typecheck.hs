@@ -160,7 +160,9 @@ checkConstructor :: Ctx -> H.ClassName -> H.Constructor -> IO T.Constructor
 checkConstructor ctx className (hParams, hSuperInit, hBody) = do
   -- TODO: The value below is a placeholder. Implement the function to return the
   -- correct value
-  return ([], Nothing, T.SBlock [])
+  let constructorName = className ++ "__init"
+  (tParams, tBody) <- checkBody ctx constructorName hParams VoidTy hBody
+  return (tParams, Nothing, tBody)
 
 -- methods
 checkMethod :: Ctx -> H.ClassName -> H.Method -> IO T.Method
@@ -456,7 +458,10 @@ synthExpr ctx (H.EInvoke hReceiverExpr methodName hArgs) = do
 
 {- New (object instantiation) -}
 synthExpr ctx (H.ENew className hConstructorArgs) = do
-  error "Typechecking for object instantiation is not yet implemented"  -- TODO
+  let constructorParamTypes = lookupConstructorParams ctx className
+  let numFields = lookupNumFields ctx className
+  targs <- checkExprs ctx hConstructorArgs constructorParamTypes
+  return (H.ClassTy className, T.ENew numFields className targs)
 
 -----------------------------------------------------------------------------------------
 -- Helper functions
