@@ -158,8 +158,6 @@ checkSuperInit ctx className (Just hExprs) = do
 -- constructors
 checkConstructor :: Ctx -> H.ClassName -> H.Constructor -> IO T.Constructor
 checkConstructor ctx className (hParams, hSuperInit, hBody) = do
-  -- TODO: The value below is a placeholder. Implement the function to return the
-  -- correct value
   let constructorName = className ++ "__init"
   (ctx', tself) <- insertVar ctx "self" (ClassTy className)
   (tParams, tBody) <- checkBody ctx' constructorName hParams VoidTy hBody
@@ -167,11 +165,18 @@ checkConstructor ctx className (hParams, hSuperInit, hBody) = do
 
 -- methods
 checkMethod :: Ctx -> H.ClassName -> H.Method -> IO T.Method
-checkMethod ctx className (methodKind, methodName, hParams, resultType, hBody) = do
+checkMethod ctx className (methodKind, methodName, hParams, resultType, hBody) = 
   -- TODO: The value below is a placeholder. Implement the function to return
   -- the correct value.
-  (tParams, tBody) <- checkBody ctx methodName hParams resultType hBody
-  return (methodName, tParams, tBody)
+  case methodKind of
+    H.Static -> do 
+          (tParams, tBody) <- checkBody ctx methodName hParams resultType hBody
+          return (methodName, tParams, tBody)
+    _        -> do
+          (ctx', tself) <- insertVar ctx "self" (ClassTy className)
+          (tParams, tBody) <- checkBody ctx' methodName hParams resultType hBody
+          return (methodName, tself : tParams, tBody)
+
 
 ------------------------------
 -- Statements
@@ -451,11 +456,15 @@ synthExpr ctx (H.ERecord fields) = do
 synthExpr ctx (H.EStaticCall className methodName hArgs) = do
   let (_, argTypes, returnType) = lookupStaticMethod ctx className methodName
   targs <- checkExprs ctx hArgs argTypes
-  return (returnType,  T.EStaticCall className methodName targs)
+  return (returnType, T.EStaticCall className methodName targs)
 
 {- Virtual calls -}
 synthExpr ctx (H.EInvoke hReceiverExpr methodName hArgs) = do
-  error "Typechecking for virtual calls is not yet implemented"  -- TODO
+  -- error "Typechecking for virtual calls is not yet implemented"  -- TODO
+  (ClassTy className, tReceiver) <- synthExpr ctx hReceiverExpr
+  let (_, argTypes, returnType) = lookupVirtualMethod ctx className methodName
+  targs <- checkExprs ctx hArgs argTypes
+  return (returnType, T.ECall (className ++ "__" ++ methodName) (tReceiver : targs))
 
 {- New (object instantiation) -}
 synthExpr ctx (H.ENew className hConstructorArgs) = do
