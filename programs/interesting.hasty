@@ -3,7 +3,12 @@
 
 // What does the program do?
 //
-//  ....
+//  This program uses a linked list and fractions to compute the geometric
+//  series 4 + 2 + 1 + 1/2 + 1/4 + ...
+//
+//  We ask the user for the number of terms in the series to sum. If they input
+//  a positive value, we generate those terms, store them in a linked list,
+//  print the list, then iterate through the list to compute the sum.
 
 class Fraction {
     var numerator : Int;
@@ -12,8 +17,8 @@ class Fraction {
     init (n:Int, d:Int) {
         // When creating a fraction, put it into lowest terms.
         var commonFactor : Int = Fraction.gcd(n, d);
-        self.numerator = n ;// / commonFactor;
-        self.denominator = d ;// / commonFactor;
+        self.numerator = n / commonFactor;
+        self.denominator = d / commonFactor;
         return;
     }
 
@@ -21,8 +26,6 @@ class Fraction {
         var numerator : Int = self.numerator * other.denominator 
                                 + other.numerator * self.denominator;
         var denominator : Int = self.denominator * other.denominator;
-        print(cast String(numerator));
-        print(cast String(denominator));
         return Fraction(numerator, denominator);
     }
 
@@ -40,15 +43,26 @@ class Fraction {
        return self.mult(Fraction(other.denominator, other.numerator));
     }
 
-    func show() -> Void {
-        print("Calling show!");
-        print(self.numerator);
-        print("Tried to access numerator");
-        print((cast String(self.numerator)) + "/" + (cast String(self.denominator)));
+    func eq(other : Fraction) -> Bool {
+       return (other.denominator == self.denominator) && (other.numerator == self.numerator);
     }
 
+    func show() -> Void {
+        print(self.toString());
+    }
+
+    func toString() -> String {
+        if self.denominator == 1 {
+            return cast String(self.numerator);
+        }
+        return ((cast String(self.numerator)) + "/" + (cast String(self.denominator)));
+    }
+
+    static func intToFrac(i:Int) -> Fraction {
+        return Fraction(i,1);
+    }
+    
     static func gcd(a:Int, b:Int) -> Int {
-        print("GCD Called.");
         if a == 0 {
             return b;
         } else if b == 0 {
@@ -67,15 +81,137 @@ class Fraction {
     }
 }
 
-func cs132start() -> Void {
-    var half : Fraction = Fraction(1, 2);
-    //var half2 : Fraction = Fraction(1, 2);
-    // print("Created fractions.");
-    //var whole : Fraction = half.add(half2);
-    half.show();
+class Node {
+    var value : Fraction;
+    var follow : Node;
+    var end : Bool;
 
-    //whole.show();
-    print(42);
-    //var a : Fraction = Fraction(1, 2);
+    init (n: Int?, f: Fraction?, node: Node?) {
+        self.value = f ?? Fraction(n ?? 0, 1);
+        self.follow = node ?? self;
+        self.end = false;
+        return;
+    }
+
+    static func null() -> Node {
+        var n : Node = Node(0, nil, nil);
+        n.end = true;
+        return n;
+    }
+
+    func getNext() -> Node {
+        return self.follow;
+    }
+
+    func setNext(n : Node) -> Bool {
+        self.follow = n;
+        self.end = false;
+        return true;
+    }
+    
+    func show() -> Void {
+        print(self.toString());
+    }
+    
+    func toString() -> String {
+        return self.value.toString();
+    }
+}
+
+class LinkedList {
+    var first : Node;
+    var last : Node;
+    var length : Int;
+
+    init () {
+        self.first = Node.null();
+        self.last = Node.null();
+        self.length = 0;
+        return;
+    }
+
+    func show() -> Void {
+        print(self.toString());
+    }
+
+    func toString() -> String {
+        var i : Int = self.length;
+        var currentNode : Node = self.first;
+        var str : String  = "[";
+        while (i > 0) {
+            str = str + " " +  currentNode.toString();
+            i = i - 1;
+            
+            if currentNode.end {
+                str = str + " ]";
+                return str;
+            }
+            currentNode = currentNode.follow;
+        }
+        str = str + " ]";
+        return str;
+    }
+
+    func append(n : Node) -> LinkedList {
+        if (self.length == 0) {
+            self.first = n;
+            self.last = n;
+            self.last.follow = Node.null();
+            self.length = 1;
+            return self;
+        }
+
+        self.last.follow = n;
+        self.last = n;
+        self.last.follow = Node.null();
+        self.length = self.length + 1;
+        return self;
+    }
+
+    func pushFrac(f : Fraction) -> LinkedList {
+        var newNode : Node = Node(nil, f, Node.null());
+        self.append(newNode);
+        return self;
+    }
+    
+    func pushInt(i : Int) -> LinkedList {
+        self.pushFrac(Fraction.intToFrac(i));
+        return self;
+    }
+}
+
+
+func cs132start() -> Void {
+    print("-- Compute the series 4 + 2 + 1 + 1/2 + 1/4 + ... --");
+    print("Enter the number of terms to sum.");
+    var terms : Int = cast Int?(readLine()) ?? 0;
+    if terms <= 0 {
+        print(0);
+        return;
+    }
+    
+    var i : Int = 0;
+    var half : Fraction = Fraction(1, 2);
+    
+    var start : Fraction = Fraction(4, 1);
+    var gmSeries : LinkedList = LinkedList().pushFrac(start);
+
+    while (i < terms - 1) {
+        start = start.mult(half);
+        gmSeries.pushFrac(start);
+        i = i + 1;
+    }
+
+    gmSeries.show();
+    print("...sums to...");
+
+    var sum : Fraction = Fraction(0, 1);
+    var element : Node = gmSeries.first;
+    while (!element.end) {
+        sum = sum.add(element.value);
+        element = element.follow;
+    }
+    sum.show();
+
     return;
 }
