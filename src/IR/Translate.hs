@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fno-warn-unused-matches #-}
+--{-# OPTIONS_GHC -fno-warn-unused-matches #-}
 
  {-|
 Module       : Translate
@@ -14,6 +14,7 @@ import qualified Data.IORef
 import           IR.Target      as Target
 import           IR.Tasty       as Tasty
 import           IR.Temp        as Temp
+import           Data.Maybe ( fromMaybe )
 
 ---------------------------------------------------
 -- Generate new Temporaries and Labels on Demand --
@@ -65,14 +66,25 @@ xBody ct params body = do
 xConstructor :: Counter -> ClassName -> Constructor -> IO Fragment
 xConstructor ct className (params, superInit, body) = do
   body' <- xBody ct params body
-  return $ FragCode (className ++ "__init") body'
+  let self = head params
+  maybeSuperCallingCode <- xMaybeSuperInit ct className self superInit
+  let superCallingCode = fromMaybe [] maybeSuperCallingCode
+  return $ FragCode (className ++ "__init") (superCallingCode ++ body')
 
 -- super initializers
+xMaybeSuperInit :: Counter -> ClassName -> Temp -> Maybe SuperInit -> IO (Maybe [Target.Stmt])
+xMaybeSuperInit _ _ _ Nothing = return Nothing
+xMaybeSuperInit ct className self (Just (superclassName, superArgs)) = do
+  stmts <- xSuperInit ct className (superclassName, ETemp self : superArgs)
+  return $ Just stmts
+
 xSuperInit :: Counter -> ClassName -> SuperInit -> IO [Target.Stmt]
-xSuperInit ct superClassName superInit = do
+xSuperInit ct className (superclassName, superArgs) = do
   -- TODO: The value below is a placeholder. Implement the function to return the
   -- correct value
-  return []
+  argExprs <- mapM (xExpr ct) superArgs
+  let superCall = EXPR $ CALL (NAME (superclassName ++ "__init")) argExprs
+  return [superCall]
 
 -- methods
 xMethod :: Counter -> ClassName -> Method -> IO Fragment

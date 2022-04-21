@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fno-warn-unused-matches #-}
+--{-# OPTIONS_GHC -fno-warn-unused-matches #-}
 
  {-|
 Module       : Typecheck
@@ -151,9 +151,16 @@ checkBody ctx name hParams resultType hBody = do
 checkSuperInit :: Ctx -> H.ClassName -> H.SuperInit -> IO (Maybe T.SuperInit)
 checkSuperInit ctx className Nothing =  return Nothing
 checkSuperInit ctx className (Just hExprs) = do
-  -- TODO: The value below is a placeholder. Implement the function to return the
-  -- correct value
-  return $ Just ("", [])
+  let maybeSuperclassName = getSuperclass ctx className
+  case maybeSuperclassName of
+    Nothing -> error $ className ++ " does not have a superclass and cannot call super"
+    Just superclassName -> checkSuperInitParams ctx superclassName hExprs
+
+checkSuperInitParams :: Ctx -> H.ClassName -> [H.Expr] -> IO (Maybe T.SuperInit)
+checkSuperInitParams ctx superclassName hExprs = do
+  let constructorParamTypes = lookupConstructorParams ctx superclassName
+  targs <- checkExprs ctx hExprs constructorParamTypes
+  return $ Just (superclassName, targs)
 
 -- constructors
 checkConstructor :: Ctx -> H.ClassName -> H.Constructor -> IO T.Constructor
@@ -161,15 +168,23 @@ checkConstructor ctx className (hParams, hSuperInit, hBody) = do
   let constructorName = className ++ "__init"
   (ctx', tself) <- insertVar ctx "self" (ClassTy className)
   (tParams, tBody) <- checkBody ctx' constructorName hParams VoidTy hBody
-  return (tself : tParams, Nothing, tBody)
+
+  
+  (ctx'', _) <- enterFunction ctx' (className ++ "__init") hParams VoidTy
+  maybeSuperInit <- checkSuperInit ctx'' className hSuperInit
+  let tSuperInit = case maybeSuperInit of
+        Nothing -> Nothing
+        Just (superclassName, tSuperParams) -> Just (superclassName, T.ETemp tself : tSuperParams)
+
+  return (tself : tParams, tSuperInit, tBody)
 
 -- methods
 checkMethod :: Ctx -> H.ClassName -> H.Method -> IO T.Method
-checkMethod ctx className (methodKind, methodName, hParams, resultType, hBody) = 
+checkMethod ctx className (methodKind, methodName, hParams, resultType, hBody) =
   -- TODO: The value below is a placeholder. Implement the function to return
   -- the correct value.
   case methodKind of
-    H.Static -> do 
+    H.Static -> do
           (tParams, tBody) <- checkBody ctx methodName hParams resultType hBody
           return (methodName, tParams, tBody)
     _        -> do
@@ -492,6 +507,9 @@ convertFromTo ctx ty1 (OptionalTy ty2) texpr =
   case convertFromTo ctx ty1 ty2 texpr of
     Just texpr' -> Just $ T.EConvert ty2 (OptionalTy ty2) texpr'
     Nothing     -> Nothing
+
+convertFromTo ctx (ClassTy c1) (ClassTy c2) texpr =
+  if inheritsFrom ctx c1 c2 then Just texpr else Nothing
 
 convertFromTo _ _ _ _ =
     -- No other pairs of types correspond to implicit
