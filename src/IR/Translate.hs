@@ -66,16 +66,16 @@ xBody ct params body = do
 xConstructor :: Counter -> ClassName -> Constructor -> IO Fragment
 xConstructor ct className (params, superInit, body) = do
   body' <- xBody ct params body
-  let self = head params
-  maybeSuperCallingCode <- xMaybeSuperInit ct className self superInit
+  -- let self = head params
+  maybeSuperCallingCode <- xMaybeSuperInit ct className superInit
   let superCallingCode = fromMaybe [] maybeSuperCallingCode
   return $ FragCode (className ++ "__init") (superCallingCode ++ body')
 
 -- super initializers
-xMaybeSuperInit :: Counter -> ClassName -> Temp -> Maybe SuperInit -> IO (Maybe [Target.Stmt])
-xMaybeSuperInit _ _ _ Nothing = return Nothing
-xMaybeSuperInit ct className self (Just (superclassName, superArgs)) = do
-  stmts <- xSuperInit ct className (superclassName, ETemp self : superArgs)
+xMaybeSuperInit :: Counter -> ClassName -> Maybe SuperInit -> IO (Maybe [Target.Stmt])
+xMaybeSuperInit _ _ Nothing = return Nothing
+xMaybeSuperInit ct className (Just (superclassName, superArgs)) = do
+  stmts <- xSuperInit ct className (superclassName, superArgs)
   return $ Just stmts
 
 xSuperInit :: Counter -> ClassName -> SuperInit -> IO [Target.Stmt]
@@ -99,7 +99,8 @@ xVTable :: Counter -> ClassName -> VTable -> IO Fragment
 xVTable ct className vtable = do
   -- TODO: The value below is a placeholder. Implement the function to return the
   -- correct value
-  return $ FragLabels (className ++ "__vtable") []
+  let labels = map (\(cn, method) -> cn ++ "__" ++ method) vtable
+  return $ FragLabels (className ++ "__vtable") labels
 
 
 -----------------------------------------------------------------------------------------
@@ -270,12 +271,14 @@ xExpr ct EReadLine = xExpr ct (ECall "readline" [])
 
 {- Record literals -}
 xExpr ct (ERecord numFields valueExprs) = do
-    -- allocate space for the record
+    -- allocate space for the record, including a dummy field at the start so
+    -- record and class fields can be indexed the same way
   t <- freshTemp ct
-  let new = ASSIGN (TEMP t) (CALL (NAME "newTable") [CONST numFields])
+  let new = ASSIGN (TEMP t) (CALL (NAME "newTable") [CONST (numFields + 1)])
 
-  -- assign values to each field
-  let indexedValues = zip [0..] valueExprs
+  -- assign values to each field, skipping the 0th field (which would contain
+  -- the vtable address in a class)
+  let indexedValues = zip [1..] valueExprs
   assignCalls <- mapM (\(idx, rhs) -> xStmt ct (SAssign (EProj (ETemp t) idx) rhs)) indexedValues
 
   return $ ESEQ (new : concat assignCalls) (TEMP t)
@@ -285,8 +288,9 @@ xExpr ct (EProj receiverExpr fieldNumber) = do
   -- Get the value of the receiver (which should be its address in memory)
   targetExpr <- xExpr ct receiverExpr
 
-  -- Calculate the field address
-  let fieldAddr = BINOP targetExpr PLUS (CONST (8 * fieldNumber))
+  -- Calculate the field address, skipping the first field (which is the virtual
+  -- table in a class and a dummy in a record)
+  let fieldAddr = BINOP targetExpr PLUS (CONST (8 * (fieldNumber + 1)))
 
   -- Dereference the field address
   return $ MEM I8 fieldAddr
@@ -298,15 +302,32 @@ xExpr ct (EStaticCall className methodName args) = do
 
 {- Virtual calls -}
 xExpr ct (EInvoke receiverExpr methodNumber args) = do
-  return undefined
+  -- Get the value of the receiver (which should be its address in memory)
+  targetExpr <- xExpr ct receiverExpr
+
+  -- The first field in the receiver is the address of the virtual table
+  let tableAddr = MEM I8 targetExpr
+
+  -- Index into the virtual table using the method number
+  let fnAddr = BINOP tableAddr PLUS (CONST (8 * methodNumber))
+
+  -- Call the function whose address was found in the virtual table
+  argExprs <- mapM (xExpr ct) args
+  return $ CALL (MEM I8 fnAddr) argExprs
 
 {- New (object instantiation) -}
 xExpr ct (ENew numFields className constructorArgs) = do
   t <- freshTemp ct
-  let new = ASSIGN (TEMP t) (CALL (NAME "newTable") [CONST numFields])
+
+  -- Generate a table with room for every field AND the address of the virtual
+  -- table
+  let new = ASSIGN (TEMP t) (CALL (NAME "newTable") [CONST (numFields + 1)])
+
+  -- Write the address of the virtual table into the 0th field
+  let vtable = ASSIGN (MEM I8 (TEMP t)) (NAME (className ++ "__vtable"))
   argExprs <- mapM (xExpr ct) constructorArgs
   let construct = EXPR $ CALL (NAME (className ++ "__init")) (TEMP t : argExprs)
-  return $ ESEQ [new, construct] (TEMP t)
+  return $ ESEQ [new, vtable, construct] (TEMP t)
 
 -----------------------------------------------------------------------------------------
 -- Helper functions
