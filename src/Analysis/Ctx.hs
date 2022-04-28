@@ -23,7 +23,7 @@ module Analysis.Ctx
     allVirtualMethods,
     lookupConstructorParams,
     lookupNumFields,
-    getSuperclass,
+    getSuperclasses,
     inheritsFrom,
   )
 where
@@ -45,7 +45,9 @@ import qualified IR.Temp    as Temp
 -- (not important for *using* the context) --
 ---------------------------------------------
 
-type ClassMapItem = (Maybe H.ClassName, [H.Field], H.Constructor, [H.Method])
+-- Describes a class with some number of superclasses, some fields, a
+-- constructor, and some methods.
+type ClassMapItem = ([H.ClassName], [H.Field], H.Constructor, [H.Method])
 
 data Ctx = Ctx
   { ctxCounter   :: Data.IORef.IORef Integer,
@@ -143,11 +145,13 @@ noClassCycles ctx =
   let classmap = ctxClassMap ctx
       noCycles :: [ClassName] -> ClassName -> Bool
       noCycles path c =
-        let (maybeSuperclass, _, _, _) = classmap Map.! c
-         in case maybeSuperclass of
-              Nothing -> True
-              Just c' ->
-                if c' `elem` path then False else noCycles (c : path) c'
+        let (superClasses, _, _, _) = classmap Map.! c
+         in case superClasses of
+              [] -> True
+              -- If we have superclasses, none of them may be on the path AND
+              -- all no path containing each superclass may have a cycle.
+              supers -> null (supers `Data.List.intersect` path) &&
+                  all (noCycles (c : path)) supers
    in all (noCycles []) (allClasses ctx)
 
 getClassInfo :: Ctx -> ClassName -> ClassMapItem
@@ -157,10 +161,10 @@ getClassInfo ctx classname = case Map.lookup classname (ctxClassMap ctx) of
 
 getAllFields :: Ctx -> ClassName -> [(H.Ident, Type)]
 getAllFields ctx classname =
-  let (maybeSuperclass, fields, _, _) = getClassInfo ctx classname
-   in case maybeSuperclass of
-        Nothing    -> fields
-        Just super -> getAllFields ctx super ++ fields
+  let (superClasses, fields, _, _) = getClassInfo ctx classname
+   in case superClasses of
+        []     -> fields
+        supers -> concatMap (getAllFields ctx) supers ++ fields
 
 lookupField :: Ctx -> Type -> H.Ident -> (Integer, Type)
 -- Returns the type for the specified field in the specified record or class
@@ -178,15 +182,26 @@ lookupField _ (RecordTy fields) fieldName =
     Nothing -> error $ "Unknown field " ++ fieldName
 lookupField _ ty _ = error $ "Cannot look up field of non-class or non-record type " ++ show ty
 
+type MethodInfo' = ([H.Ident], [H.Ident], Map.Map H.Ident (H.ClassName, [Type], Type))
+
+combineMethods' :: MethodInfo' -> MethodInfo' -> MethodInfo'
+combineMethods' (snms1, vnms1, map1) (snms2, vnms2, map2) =
+  -- Taking the left-biased union of the maps is intended to favor inheritance
+  -- paths in the order that superclasses are listed.
+  (snms1 ++ snms2, vnms1 ++ vnms2, map1 `Map.union` map2)
+
+argTypes' :: [(a, b)] -> [b]
+argTypes' = map snd
+
 getAllMethods' ::
   Ctx ->
   ClassName ->
-  ([H.Ident], [H.Ident], Map.Map H.Ident (H.ClassName, [Type], Type)) -- is it static?
+  MethodInfo' -- is it static?
 getAllMethods' ctx c =
-  let (maybeSuperclass, _, _, methods) = getClassInfo ctx c
-      (inh_snms, inh_vnms, inheritedMap) = case maybeSuperclass of
-        Nothing    -> ([], [], Map.empty)
-        Just super -> getAllMethods' ctx super
+  let (superClasses, _, _, methods) = getClassInfo ctx c
+      (inh_snms, inh_vnms, inheritedMap) = case superClasses of
+        []     -> ([], [], Map.empty)
+        supers -> foldr1 combineMethods' (map (getAllMethods' ctx) supers)
 
       loop [] snms vnms mp = (snms, vnms, mp)
       loop ((H.Override, m, args, res, _) : rest) snms vnms mp =
@@ -200,7 +215,7 @@ getAllMethods' ctx c =
                   ++ " in "
                   ++ c
           Just (_, args', res')
-            | map snd args /= args' || res /= res' ->
+            | argTypes' args /= args' || res /= res' ->
               error $ "Attempt to override method with different types: " ++ m
           Just (_, args', res') ->
             if m `elem` vnms
@@ -214,7 +229,7 @@ getAllMethods' ctx c =
               rest
               (snms ++ [m])
               vnms
-              (Map.insert m (c, map snd args, res) mp)
+              (Map.insert m (c, argTypes' args, res) mp)
       loop ((H.Virtual, m, args, res, _) : rest) snms vnms mp =
         if Map.member m mp
           then error $ "Illegal redefinition of method " ++ m
@@ -223,7 +238,7 @@ getAllMethods' ctx c =
               rest
               snms
               (vnms ++ [m])
-              (Map.insert m (c, map snd args, res) mp)
+              (Map.insert m (c, argTypes' args, res) mp)
    in loop methods inh_snms inh_vnms inheritedMap
 
 lookupVirtualMethod ::
@@ -271,18 +286,18 @@ lookupNumFields :: Ctx -> ClassName -> Integer
 --   (includes all the inherited fields)
 lookupNumFields ctx c = fromIntegral $ length (getAllFields ctx c)
 
-getSuperclass :: Ctx -> ClassName -> Maybe ClassName
--- Returns the name of the superclass of the given class, if any
-getSuperclass ctx c = case Map.lookup c (ctxClassMap ctx) of
+getSuperclasses :: Ctx -> ClassName -> [ClassName]
+-- Returns the names of the superclasses of the given class, if any
+getSuperclasses ctx c = case Map.lookup c (ctxClassMap ctx) of
   Nothing -> error $ "No superclass for non-existent class: " ++ c
-  Just (optSuperclass, _, _, _) -> optSuperclass
+  Just (superClasses, _, _, _) -> superClasses
 
 inheritsFrom :: Ctx -> ClassName -> ClassName -> Bool
 inheritsFrom _ c1 c2 | c1 == c2 = True
 inheritsFrom ctx c1 c2 = case Map.lookup c1 (ctxClassMap ctx) of
   Nothing -> error "Asking inheritsFrom about non-existent class"
-  Just (Nothing, _, _, _) -> False
-  Just (Just c1', _, _, _) -> inheritsFrom ctx c1' c2
+  Just ([], _, _, _) -> False
+  Just (superClasses, _, _, _) -> any (\super -> inheritsFrom ctx super c2) superClasses
 
 --------------------------------
 -- Creating Contexts to Start --
