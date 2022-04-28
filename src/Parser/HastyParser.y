@@ -155,7 +155,7 @@ Type : INT                      { IntTy }
 
 Declaration :: { Declaration }
 Declaration: FUNC IDENT LPAREN Parameterz RPAREN ARROW Type Block { DeclFunc $2 $4 $7 $8 }
-           | CLASS CLASSNAME Superclass LBRACE Fieldz Constructor Methodz RBRACE 
+           | CLASS CLASSNAME Superclassz LBRACE Fieldz Constructor Methodz RBRACE 
                { DeclClass $2 $3 $5 $6 $7 }
 
 Declarations: { [] }
@@ -179,9 +179,12 @@ Records : Record { [$1] }
 
 Record: IDENT ASSIGN Expression { ($1, $3) }
 
-Superclass :: {Maybe ClassName}
-Superclass:                   { Nothing }
-          | COLON CLASSNAME   { Just $2 }
+Superclassz :: { [ClassName] }
+Superclassz :                    { [] }
+            | COLON Superclasses { $2 }
+ 
+Superclasses : CLASSNAME                    { [$1] }
+             | CLASSNAME COMMA Superclasses { $1 : $3 }
 
 Field: VAR IDENT COLON Type SEMI   { ($2, $4) }
 
@@ -190,7 +193,19 @@ Fieldz: { [] }
       | Field Fieldz { $1: $2 }
 
 Constructor :: { Constructor }
-Constructor: INIT LPAREN Parameterz RPAREN SuperInit Block { ($3, $5, $6) }
+Constructor: INIT LPAREN Parameterz RPAREN SuperInitz Block { ($3, $5, $6) }
+
+SuperInitz :: { [SuperInit] }
+SuperInitz :                  { [] }
+           | COLON SUPER LPAREN Expressionz RPAREN { [(Nothing, $4)] }
+           | COLON NamedSuperInits { $2 }
+
+NamedSuperInit :: { [SuperInit] }
+NamedSuperInits : NamedSuperInit { [$1] }
+                | NamedSuperInit COMMA NamedSuperInits { $1 : $3 }
+
+NamedSuperInit :: { SuperInit }
+NamedSuperInit : CLASSNAME LPAREN Expressionz RPAREN { (Just $1, $3) }
 
 SuperInit :: { Maybe [Expr] }
 SuperInit:                                         { Nothing }
