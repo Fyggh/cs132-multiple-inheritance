@@ -104,14 +104,16 @@ type Method = (MethodKind, Ident, [Parameter], Type, Stmt)
 data MethodKind = Static | Virtual | Override
      deriving (Show, Eq)
 
--- A super initializer is an optional list of expressions. If the value is not
--- Nothing, then the list of expressions will be passed as arguments to the
--- superclass constructor.
-type SuperInit = Maybe [Expr]
+-- A super initializer is an list of expressions to be passed to a superclass
+-- constructor. If the superclass name is not specified, then this is treated as
+-- a normal `super` call and uses the unique superclass of the current class.
+-- (Note: it is an error to have a `super` call in a class with multiple
+-- parents.)
+type SuperInit = (Maybe ClassName, [Expr])
 
--- A constructor has a list of parameters, an optional superclass initializer
--- (which is a list of arguments for the super-class constructor), and a body.
-type Constructor = ([Parameter], SuperInit, Stmt)
+-- A constructor has a list of parameters, some superclass initializers (which
+-- are lists of arguments for specific super-class constructors), and a body.
+type Constructor = ([Parameter], [SuperInit], Stmt)
 
 -------------
 -- Program --
@@ -124,9 +126,9 @@ data Declaration =
    -- A function has a name, a list of parameters, a result type, and a body.
    DeclFunc FnName [Parameter] Type Stmt
 
-   -- A class has a name an optional superclass name, a list of declared fields,
+   -- A class has a name, optional superclass names, a list of declared fields,
    -- a constructor, and a list of methods
- | DeclClass ClassName (Maybe ClassName) [Field] Constructor [Method]
+ | DeclClass ClassName [ClassName] [Field] Constructor [Method]
      deriving (Eq, Show)
 
 type Program = [Declaration]
