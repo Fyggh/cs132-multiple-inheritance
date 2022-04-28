@@ -200,16 +200,12 @@ SuperInitz :                  { [] }
            | COLON SUPER LPAREN Expressionz RPAREN { [(Nothing, $4)] }
            | COLON NamedSuperInits { $2 }
 
-NamedSuperInit :: { [SuperInit] }
+NamedSuperInits :: { [SuperInit] }
 NamedSuperInits : NamedSuperInit { [$1] }
                 | NamedSuperInit COMMA NamedSuperInits { $1 : $3 }
 
 NamedSuperInit :: { SuperInit }
 NamedSuperInit : CLASSNAME LPAREN Expressionz RPAREN { (Just $1, $3) }
-
-SuperInit :: { Maybe [Expr] }
-SuperInit:                                         { Nothing }
-         | COLON SUPER LPAREN Expressionz RPAREN   { Just $4 }
 
 Method :: { Method }
 Method: MethodKind FUNC IDENT LPAREN Parameterz RPAREN ARROW Type Block         
