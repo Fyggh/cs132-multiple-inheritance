@@ -1,0 +1,36 @@
+// should print 42
+
+class Singer {
+    var name : String;
+
+    init (n : String) {
+        self.name = n;
+    }
+
+    func sing(lyric : String) -> Void {
+        print(self.name + " sings, \"La la la... " + lyric + "\"");
+    }
+}
+
+class Puppet {
+    init () {
+        return;
+    }
+
+    func move() -> Void {
+        print("Move your body!");
+    }
+}
+
+class Muppet : Singer, Puppet {
+    init (n : String) : Singer(n), Puppet() {
+        return;
+    }
+}
+
+func cs132start() -> Void {
+    var m : Muppet = Muppet("Kermit");
+    m.sing("It's not easy being green.");
+    m.move();
+    return;
+}

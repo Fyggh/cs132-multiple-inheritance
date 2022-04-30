@@ -1,0 +1,48 @@
+// should print 42
+
+class Performance {
+    var title : String;
+
+    init (title : String) {
+        self.title = title;
+    }
+
+    func describe() -> Void {
+        print("This is a generic performance.");
+    } 
+}
+
+class Play : Performance {
+
+    init (title : String) : super(title) {
+        return;
+    }
+
+    override func describe() -> Void {
+        print("This is a play.");
+    }
+
+}
+
+class Opera : Performance {
+    init (title : String) : super(title) {
+        return;
+    }
+
+    override func describe() -> Void {
+        print("This is an opera.");
+    }
+}
+
+class Musical : Opera, Play {
+    init (title: String) : Play(title), Opera(title) {
+        return;
+    }
+}
+
+
+func cs132start() -> Void {
+    var m : Musical = Musical("Hamilton");
+    m.describe();
+    return;
+}
