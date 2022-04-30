@@ -65,12 +65,15 @@ xBody ct params body = do
 -- constructors
 xConstructor :: Counter -> ClassName -> Constructor -> IO Fragment
 xConstructor ct className (params, superInits, body) = do
-  body' <- xBody ct params body
-  -- let self = head params
+  let moveParams = [  ASSIGN (TEMP p) (TEMP r)
+                    | (r, p) <- zip X86gen.argumentRegisters params ]
   superCallingCode <- concat <$> mapM (xSuperInit ct className) superInits
+  body' <- xStmt ct body
+  -- body' <- xBody ct params body
+  -- let self = head params
   -- maybeSuperCallingCode <- xMaybeSuperInit ct className superInit
   -- let superCallingCode = fromMaybe [] maybeSuperCallingCode
-  return $ FragCode (className ++ "__init") (superCallingCode ++ body')
+  return $ FragCode (className ++ "__init") (moveParams ++ superCallingCode ++ body')
 
 -- super initializers
 xMaybeSuperInit :: Counter -> ClassName -> Maybe SuperInit -> IO (Maybe [Target.Stmt])

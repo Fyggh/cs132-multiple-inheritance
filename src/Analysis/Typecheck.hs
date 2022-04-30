@@ -14,7 +14,7 @@ import qualified IR.Hasty     as H
 import qualified IR.Tasty     as T
 
 import           Analysis.Ctx
---import           Data.Bifunctor
+import           Data.Bifunctor
 
 ----------------------------------------------------------
 -- Important functions to manipulate the Typing Context --
@@ -177,11 +177,14 @@ checkConstructor :: Ctx -> H.ClassName -> H.Constructor -> IO T.Constructor
 checkConstructor ctx className (hParams, hSuperInit, hBody) = do
   let constructorName = className ++ "__init"
   (ctx', tself) <- insertVar ctx "self" (ClassTy className)
-  (tParams, tBody) <- checkBody ctx' constructorName hParams VoidTy hBody
+  --(tParams, tBody) <- checkBody ctx' constructorName hParams VoidTy hBody
+  (ctx'', tParams) <- enterFunction ctx' constructorName hParams VoidTy
+  tBody           <- stmtOK ctx'' hBody
+  --return (tParams, tBody)
 
-  (ctx'', _) <- enterFunction ctx' (className ++ "__init") hParams VoidTy
+  --(ctx'', _) <- enterFunction ctx' (className ++ "__init") hParams VoidTy
   tSuperInits <- mapM (checkSuperInit ctx'' className) hSuperInit
-  -- let tSuperInits' = map (Data.Bifunctor.second (tself :)) tSuperInits
+  let tSuperInits' = map (Data.Bifunctor.second (T.ETemp tself :)) tSuperInits
   -- maybeSuperInit <- checkSuperInit ctx'' className hSuperInit
   -- let tSuperInit = case maybeSuperInit of
   --       Nothing -> Nothing
@@ -189,7 +192,7 @@ checkConstructor ctx className (hParams, hSuperInit, hBody) = do
 
 
   -- NOTE: currently tSuperInits do NOT include self as the first parameter.
-  return (tself : tParams, tSuperInits, tBody)
+  return (tself : tParams, tSuperInits', tBody)
 
 -- methods
 checkMethod :: Ctx -> H.ClassName -> H.Method -> IO T.Method
