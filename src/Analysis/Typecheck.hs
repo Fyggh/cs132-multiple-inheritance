@@ -14,6 +14,7 @@ import qualified IR.Hasty     as H
 import qualified IR.Tasty     as T
 
 import           Analysis.Ctx
+--import           Data.Bifunctor
 
 ----------------------------------------------------------
 -- Important functions to manipulate the Typing Context --
@@ -148,19 +149,28 @@ checkBody ctx name hParams resultType hBody = do
   return (tParams, tBody)
 
 -- super initializers
-checkSuperInit :: Ctx -> H.ClassName -> H.SuperInit -> IO (Maybe T.SuperInit)
-checkSuperInit ctx className Nothing =  return Nothing
-checkSuperInit ctx className (Just hExprs) = do
-  let maybeSuperclassName = getSuperclass ctx className
-  case maybeSuperclassName of
-    Nothing -> error $ className ++ " does not have a superclass and cannot call super"
-    Just superclassName -> checkSuperInitParams ctx superclassName hExprs
+checkSuperInit :: Ctx -> H.ClassName -> H.SuperInit -> IO T.SuperInit
+checkSuperInit ctx className (Nothing, hExprs) = do
+  let superclasses = getSuperclasses ctx className
+  case superclasses of
+    [] -> error $ className ++ " does not have a superclass and cannot call super"
+    (superName : rest) -> if null rest
+      -- Main case: class extends exactly one superclass.
+      then checkSuperInitParams ctx superName hExprs
+      else error $ "Ambiguous call to super in class " ++ className
+        ++ " which uses multiple inheritance."
+checkSuperInit ctx className (Just superName, hExprs) = do
+  let superclasses = getSuperclasses ctx className
+  if superName `elem` superclasses
+    then checkSuperInitParams ctx superName hExprs
+    else error $ className ++ " does not extend the class " ++ superName
+      ++ " and cannot call its constructor."
 
-checkSuperInitParams :: Ctx -> H.ClassName -> [H.Expr] -> IO (Maybe T.SuperInit)
+checkSuperInitParams :: Ctx -> H.ClassName -> [H.Expr] -> IO T.SuperInit
 checkSuperInitParams ctx superclassName hExprs = do
   let constructorParamTypes = lookupConstructorParams ctx superclassName
   targs <- checkExprs ctx hExprs constructorParamTypes
-  return $ Just (superclassName, targs)
+  return (superclassName, targs)
 
 -- constructors
 checkConstructor :: Ctx -> H.ClassName -> H.Constructor -> IO T.Constructor
@@ -169,14 +179,17 @@ checkConstructor ctx className (hParams, hSuperInit, hBody) = do
   (ctx', tself) <- insertVar ctx "self" (ClassTy className)
   (tParams, tBody) <- checkBody ctx' constructorName hParams VoidTy hBody
 
-  
   (ctx'', _) <- enterFunction ctx' (className ++ "__init") hParams VoidTy
-  maybeSuperInit <- checkSuperInit ctx'' className hSuperInit
-  let tSuperInit = case maybeSuperInit of
-        Nothing -> Nothing
-        Just (superclassName, tSuperParams) -> Just (superclassName, T.ETemp tself : tSuperParams)
+  tSuperInits <- mapM (checkSuperInit ctx'' className) hSuperInit
+  -- let tSuperInits' = map (Data.Bifunctor.second (tself :)) tSuperInits
+  -- maybeSuperInit <- checkSuperInit ctx'' className hSuperInit
+  -- let tSuperInit = case maybeSuperInit of
+  --       Nothing -> Nothing
+  --       Just (superclassName, tSuperParams) -> Just (superclassName, T.ETemp tself : tSuperParams)
 
-  return (tself : tParams, tSuperInit, tBody)
+
+  -- NOTE: currently tSuperInits do NOT include self as the first parameter.
+  return (tself : tParams, tSuperInits, tBody)
 
 -- methods
 checkMethod :: Ctx -> H.ClassName -> H.Method -> IO T.Method

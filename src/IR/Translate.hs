@@ -64,11 +64,12 @@ xBody ct params body = do
 
 -- constructors
 xConstructor :: Counter -> ClassName -> Constructor -> IO Fragment
-xConstructor ct className (params, superInit, body) = do
+xConstructor ct className (params, superInits, body) = do
   body' <- xBody ct params body
   -- let self = head params
-  maybeSuperCallingCode <- xMaybeSuperInit ct className superInit
-  let superCallingCode = fromMaybe [] maybeSuperCallingCode
+  superCallingCode <- concat <$> mapM (xSuperInit ct className) superInits
+  -- maybeSuperCallingCode <- xMaybeSuperInit ct className superInit
+  -- let superCallingCode = fromMaybe [] maybeSuperCallingCode
   return $ FragCode (className ++ "__init") (superCallingCode ++ body')
 
 -- super initializers

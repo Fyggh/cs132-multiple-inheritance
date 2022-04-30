@@ -116,13 +116,14 @@ data Stmt =
 -- Method name, parameters, body
 type Method = (Ident, [Parameter], Stmt)
 
--- A super initializer is a Maybe pair of a class name, and a list of expressions. If the
--- value is not Nothing, then the list of expressions will be passed as arguments to the
--- superclass constructor.
+-- A super initializer is a pair of a class name and a list of expressions. The
+-- expressions will be passed to the constructor of the specified classname,
+-- which represents the superclass. Generic calls to `super` will be translated
+-- into specific classnames by the typechecker.
 type SuperInit = (ClassName, [Expr])
 
 -- Constructor parameters, superclass and superclass-constructor args (if any), body
-type Constructor = ([Parameter], Maybe SuperInit, Stmt)
+type Constructor = ([Parameter], [SuperInit], Stmt)
 
 -- A vtable is a list of classname-methodname pairs.
 type VTable = [(ClassName,MethodName)]
