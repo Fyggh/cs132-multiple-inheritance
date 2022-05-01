@@ -69,10 +69,6 @@ xConstructor ct className (params, superInits, body) = do
                     | (r, p) <- zip X86gen.argumentRegisters params ]
   superCallingCode <- concat <$> mapM (xSuperInit ct className) superInits
   body' <- xStmt ct body
-  -- body' <- xBody ct params body
-  -- let self = head params
-  -- maybeSuperCallingCode <- xMaybeSuperInit ct className superInit
-  -- let superCallingCode = fromMaybe [] maybeSuperCallingCode
   return $ FragCode (className ++ "__init") (moveParams ++ superCallingCode ++ body')
 
 -- super initializers
@@ -84,8 +80,6 @@ xMaybeSuperInit ct className (Just (superclassName, superArgs)) = do
 
 xSuperInit :: Counter -> ClassName -> SuperInit -> IO [Target.Stmt]
 xSuperInit ct className (superclassName, superArgs) = do
-  -- TODO: The value below is a placeholder. Implement the function to return the
-  -- correct value
   argExprs <- mapM (xExpr ct) superArgs
   let superCall = EXPR $ CALL (NAME (superclassName ++ "__init")) argExprs
   return [superCall]
@@ -93,16 +87,12 @@ xSuperInit ct className (superclassName, superArgs) = do
 -- methods
 xMethod :: Counter -> ClassName -> Method -> IO Fragment
 xMethod ct className (methodName, params, body) = do
-  -- TODO: The value below is a placeholder. Implement the function to return the
-  -- correct value
   body' <- xBody ct params body
   return $ FragCode (className ++ "__" ++ methodName) body'
 
 -- vtables
 xVTable :: Counter -> ClassName -> VTable -> IO Fragment
 xVTable ct className vtable = do
-  -- TODO: The value below is a placeholder. Implement the function to return the
-  -- correct value
   let labels = map (\(cn, method) -> cn ++ "__" ++ method) vtable
   return $ FragLabels (className ++ "__vtable") labels
 

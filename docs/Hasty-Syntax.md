@@ -103,23 +103,32 @@
                | <identifier> : <Type> , <Parameters>
 
  <Declaration> ::= func <identifier> ( <Parameterz> ) -> <Type> <Block>
-                 | class <classname> <Superclass> { <Fieldz> <Constructor> <Methodz> }
+                 | class <classname> <Superclassz> { <Fieldz> <Constructor> <Methodz> }
 
  <Declarationz> ::= ε
                | <Declaration> <Declarationz>
 
- <Superclass> ::= ε
-                | : <classname>
+ <Superclassz> ::= ε
+                 | : <Superclasses>
+
+ <Superclasses> ::= <classname>
+                  | <classname>, <Superclasses>
 
  <Field> ::= var  <identifier> : <Type> ;
 
  <Fieldz> ::= ε
             | <Field> <Fieldz>
 
- <Constructor> ::= init ( <Parameterz> ) <SuperInit> <Block>
+ <Constructor> ::= init ( <Parameterz> ) <SuperInitz> <Block>
 
- <SuperInit> ::= ε
-               | : super ( <Expressionz> )
+ <SuperInitz> ::= ε
+                | : super ( <Expressionz> )
+                | : <NamedSuperInits>
+
+ <NamedSuperInits> ::= <NamedSuperInit>
+                     | <NamedSuperInit>, <NamedSuperInits>
+
+ <NamedSuperInit> ::= <classname> ( <Expressionz> )
 
  <Method> ::= <MethodKind> func <identifier> ( <Parameterz> ) -> <Type> Block
 

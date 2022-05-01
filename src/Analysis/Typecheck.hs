@@ -177,28 +177,20 @@ checkConstructor :: Ctx -> H.ClassName -> H.Constructor -> IO T.Constructor
 checkConstructor ctx className (hParams, hSuperInit, hBody) = do
   let constructorName = className ++ "__init"
   (ctx', tself) <- insertVar ctx "self" (ClassTy className)
-  --(tParams, tBody) <- checkBody ctx' constructorName hParams VoidTy hBody
+
+  -- Check the body
   (ctx'', tParams) <- enterFunction ctx' constructorName hParams VoidTy
   tBody           <- stmtOK ctx'' hBody
-  --return (tParams, tBody)
 
-  --(ctx'', _) <- enterFunction ctx' (className ++ "__init") hParams VoidTy
+  -- Check the calls to all superclass constructors
   tSuperInits <- mapM (checkSuperInit ctx'' className) hSuperInit
   let tSuperInits' = map (Data.Bifunctor.second (T.ETemp tself :)) tSuperInits
-  -- maybeSuperInit <- checkSuperInit ctx'' className hSuperInit
-  -- let tSuperInit = case maybeSuperInit of
-  --       Nothing -> Nothing
-  --       Just (superclassName, tSuperParams) -> Just (superclassName, T.ETemp tself : tSuperParams)
 
-
-  -- NOTE: currently tSuperInits do NOT include self as the first parameter.
   return (tself : tParams, tSuperInits', tBody)
 
 -- methods
 checkMethod :: Ctx -> H.ClassName -> H.Method -> IO T.Method
 checkMethod ctx className (methodKind, methodName, hParams, resultType, hBody) =
-  -- TODO: The value below is a placeholder. Implement the function to return
-  -- the correct value.
   case methodKind of
     H.Static -> do
           (tParams, tBody) <- checkBody ctx methodName hParams resultType hBody
@@ -496,7 +488,6 @@ synthExpr ctx (H.EInvoke hReceiverExpr methodName hArgs) = do
   let (fnIndex, argTypes, returnType) = lookupVirtualMethod ctx className methodName
   targs <- checkExprs ctx hArgs argTypes
   return (returnType, T.EInvoke tReceiver fnIndex (tReceiver : targs))
-  -- return (returnType, T.ECall (className ++ "__" ++ methodName) (tReceiver : targs))
 
 {- New (object instantiation) -}
 synthExpr ctx (H.ENew className hConstructorArgs) = do
