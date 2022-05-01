@@ -7,6 +7,8 @@ This required updating the language grammar, the parser, the typing context (to
 store multiple superclasses per class), the type checker, and the
 Tasty-to-Target translator.
 
+[The updated language syntax can be found here.](docs/Hasty-Syntax.md)
+
 ## What is Multiple Inheritance?
 
 Traditional single inheritance allows a class to extend a single superclass, inheriting its fields and functions. Multiple inheritance simply expands this to allow classes to inherit from multiple superclasses. Cycles of inheritance are still forbidden, meaning that a class A cannot list class B as a superclass if B ever extends from class A. However, a class might extend from a class multiple times, like if class A inherits from classes B and C, while B and C both inherit from class D.
