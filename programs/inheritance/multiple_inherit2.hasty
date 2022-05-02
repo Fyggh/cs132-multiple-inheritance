@@ -1,5 +1,3 @@
-// should print 42
-
 class Singer {
     var name : String;
 

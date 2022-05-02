@@ -46,9 +46,17 @@ class Musical2 : Opera, Play {
 
 
 func cs132start() -> Void {
-    var m1 : Musical1 = Musical1("The Book of Mormon");
-    var m2 : Musical2 = Musical2("Hamilton");
-    m1.describe();
-    m2.describe();
+    print("Type 0 for a Play, 1 for an Opera.");
+    var choice : Int = cast Int?(readLine()) ?? 0;
+
+    var obj : Performance = Performance("null");
+
+    if (choice == 0) {
+        obj = Play("Waiting for Godot");
+    } else {
+        obj = Opera("The Magic Flute");
+    }
+
+    obj.describe();
     return;
 }
